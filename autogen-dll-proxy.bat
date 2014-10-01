@@ -11,7 +11,7 @@ copy %1 %~n1_original%~x1
 
 echo.
 echo "***** Generating source for proxy DLL *****"
-..\bin\make_proxy_dll.exe %~n1_original%~x1 proxy_%~n1.cpp
+.\bin\make_proxy_dll.exe %~n1_original%~x1 proxy_%~n1.cpp
 
 echo.
 echo "***** Compiling the new dll *****"

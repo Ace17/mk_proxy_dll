@@ -15,7 +15,7 @@ Thus, "program.exe" will load your freshly created impersonator DLL instead.
 
 mk_proxy_dll library.dll librarZ.dll
 
-gcc librarZ.c -shared -o librarZ.dll
+cl librarZ.c /link /DLL -o librarZ.dll /DEF:librarZ.c.def
 
 hexer program.exe
 

@@ -33,6 +33,8 @@
 
 #include "pe_headers.h"
 
+auto const targetVisualStudio = true;
+
 template<int N>
 uint32_t read_n(std::vector<uint8_t> const& buffer, int offset)
 {
@@ -238,10 +240,19 @@ void safe_main(int argc, char const* argv[])
   // generate function stubs
   for(auto& sName : g_ExportedNames)
   {
-    fp_out << "extern \"C\" __declspec(naked) void proxy_" << sName << "()" << std::endl;
+    if(targetVisualStudio)
+      fp_out << "extern \"C\" __declspec(naked) ";
+    fp_out << "void proxy_" << sName << "()";
+//  if(!targetVisualStudio)
+//    fp_out << " __attribute__((naked))";
+    fp_out << std::endl;
+
     fp_out << "{" << std::endl;
     fp_out << "  fprintf(stderr, \"proxy-dll: entering function " << sName << "\\n\");" << std::endl;
-    fp_out << "  __asm jmp g_p" << sName << ";" << std::endl;
+    if(targetVisualStudio)
+      fp_out << "  __asm jmp g_p" << sName << ";" << std::endl;
+    else
+      fp_out << "  asm(\"jmp g_p" << sName << "\");" << std::endl;
     fp_out << "}" << std::endl;
     fp_out << std::endl;
   }
