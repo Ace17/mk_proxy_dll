@@ -1,3 +1,26 @@
+/**
+ * @file header_gen.cpp
+ * @brief A program to generate C code for structures.
+ * @author Sebastien Alaiwan
+ * @date 2014-10-01
+ */
+
+/*
+ * Copyright (C) 2014 - Sebastien Alaiwan
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <iostream>
 #include <stdio.h>
 
@@ -138,7 +161,7 @@ struct HeaderDescription
 //------------------------------------------------------------------------------
 // MZ header description
 //------------------------------------------------------------------------------
-MemberDescription mz_members[] = 
+MemberDescription mz_members[] =
 {
   {2, "WORD", "e_magic"   ,  1,  "Magic number"},
   {2, "WORD", "e_cblp"    ,  1,  "Bytes on last page of file"},
@@ -161,7 +184,7 @@ MemberDescription mz_members[] =
   {4, "DWORD"  , "e_lfanew"  ,  1,  "File address of new exe header"},
 };
 
-HeaderDescription mz_header = 
+HeaderDescription mz_header =
 {
   "MZ_HEADER",
   mz_members,
@@ -171,7 +194,7 @@ HeaderDescription mz_header =
 //------------------------------------------------------------------------------
 // PE header description
 //------------------------------------------------------------------------------
-MemberDescription pe_header_members[] = 
+MemberDescription pe_header_members[] =
 {
   {4, "DWORD", "Magic",                1, ""},
   {2, "WORD",  "Machine",              1, ""},
@@ -183,7 +206,7 @@ MemberDescription pe_header_members[] =
   {2, "WORD",  "Characteristics",      1, ""},
 };
 
-HeaderDescription pe_header = 
+HeaderDescription pe_header =
 {
   "PE_HEADER",
   pe_header_members,
@@ -193,7 +216,7 @@ HeaderDescription pe_header =
 //------------------------------------------------------------------------------
 // PE optional header description
 //------------------------------------------------------------------------------
-MemberDescription pe_opt_header_members[] = 
+MemberDescription pe_opt_header_members[] =
 {
   {2, "WORD",  "Magic", 1, ""},
   {1, "BYTE",  "MajorLinkerVersion", 1, ""},
@@ -237,7 +260,7 @@ HeaderDescription pe_opt_header =
 //------------------------------------------------------------------------------
 // PE section header description
 //------------------------------------------------------------------------------
-MemberDescription pe_section_header_members[] = 
+MemberDescription pe_section_header_members[] =
 {
   { 1, "BYTE",  "Name",                  8, "" },
   { 4, "DWORD", "VirtualSize",           1, "" },
@@ -251,7 +274,7 @@ MemberDescription pe_section_header_members[] =
   { 4, "DWORD", "Characteristics",       1, "" },
 };
 
-HeaderDescription pe_section_header = 
+HeaderDescription pe_section_header =
 {
   "PE_SECTION_HEADER",
   pe_section_header_members,
@@ -261,13 +284,13 @@ HeaderDescription pe_section_header =
 //------------------------------------------------------------------------------
 // PE section header description
 //------------------------------------------------------------------------------
-MemberDescription data_directory_members[] = 
+MemberDescription data_directory_members[] =
 {
   { 4, "DWORD", "VirtualAddress", 1, "" },
   { 4, "DWORD", "Size",           1, "" },
 };
 
-HeaderDescription data_directory_header = 
+HeaderDescription data_directory_header =
 {
   "IMAGE_DATA_DIRECTORY",
   data_directory_members,
@@ -277,7 +300,7 @@ HeaderDescription data_directory_header =
 //------------------------------------------------------------------------------
 // Export directory description
 //------------------------------------------------------------------------------
-MemberDescription export_directory_members[] = 
+MemberDescription export_directory_members[] =
 {
   {4, "DWORD", "Characteristics",             1, ""},
   {4, "DWORD", "TimeDateStamp",               1, ""},
@@ -292,7 +315,7 @@ MemberDescription export_directory_members[] =
   {4, "DWORD", "AddressOfNameOrdinals",       1, ""},
 };
 
-HeaderDescription export_directory_header = 
+HeaderDescription export_directory_header =
 {
   "IMAGE_EXPORT_DIRECTORY",
   export_directory_members,
@@ -301,7 +324,7 @@ HeaderDescription export_directory_header =
 
 //------------------------------------------------------------------------------
 
-HeaderDescription* all_headers[] = 
+HeaderDescription* all_headers[] =
 {
   &mz_header,
   &pe_header,

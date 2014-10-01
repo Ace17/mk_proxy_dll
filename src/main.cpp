@@ -1,3 +1,26 @@
+/**
+ * @file main.cpp
+ * @brief Given an input dll, generates C code for a proxy dll.
+ * @author Sebastien Alaiwan
+ * @date 2014-10-01
+ */
+
+/*
+ * Copyright (C) 2014 - Sebastien Alaiwan
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -9,7 +32,6 @@
 
 #include "pe_headers.h"
 
-
 template<int N>
 unsigned int read_n(std::vector<unsigned char> const& buffer, int offset)
 {
@@ -19,8 +41,6 @@ unsigned int read_n(std::vector<unsigned char> const& buffer, int offset)
     if(offset+i >= buffer.size())
       throw std::runtime_error("out of bounds.");
     iRet |= ((unsigned int)(buffer[offset+i]) << i*8);
-//    //std::cout << "0x" << std::hex << int(buffer[offset+i]) << std::endl;
-//    //std::cout << "iRet = 0x" << std::hex << iRet << std::endl;
   }
   return iRet;
 }
@@ -34,19 +54,6 @@ unsigned int read_ushort(std::vector<unsigned char> const& buffer, int offset)
 {
   return read_n<2>(buffer, offset);
 }
-
-/*
-template<int N>
-unsigned int read_n(unsigned char const* buffer)
-{
-  unsigned int iRet = 0;
-  for(int i=0;i < N;++i)
-  {
-    iRet |= ((unsigned int)(buffer[i]) << i*8);
-  }
-  return iRet;
-}
-*/
 
 unsigned int read_uint(unsigned char const* buffer)
 {
@@ -96,7 +103,6 @@ struct pe_section_s
   }
 };
 
-std::list<pe_section_s> g_Sections;
 std::list<std::string> g_ExportedNames;
 
 unsigned int rva_to_offset(PE_SECTION_HEADER const& sh, unsigned int iVirtualAddress)
@@ -308,11 +314,12 @@ int main(int argc, char const* argv[])
         fp_def_out << "  " << sName << "=proxy_" << sName << std::endl;
       }
     }
+
+    return EXIT_SUCCESS;
   }
   catch(std::runtime_error const& e)
   {
     std::cerr << "Runtime error : " << e.what() << std::endl;
+    return EXIT_FAILURE;
   }
-
-  return EXIT_SUCCESS;
 }
