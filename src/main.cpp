@@ -29,43 +29,44 @@
 #include <fstream>
 #include <list>
 #include <stdexcept>
+#include <stdint.h>
 
 #include "pe_headers.h"
 
 template<int N>
-unsigned int read_n(std::vector<unsigned char> const& buffer, int offset)
+uint32_t read_n(std::vector<uint8_t> const& buffer, int offset)
 {
-  unsigned int iRet = 0;
+  uint32_t iRet = 0;
   for(int i=0;i < N;++i)
   {
     if(offset+i >= buffer.size())
       throw std::runtime_error("out of bounds.");
-    iRet |= ((unsigned int)(buffer[offset+i]) << i*8);
+    iRet |= ((uint32_t)(buffer[offset+i]) << i*8);
   }
   return iRet;
 }
 
-unsigned int read_uint(std::vector<unsigned char> const& buffer, int offset)
+uint32_t read_uint(std::vector<uint8_t> const& buffer, int offset)
 {
   return read_n<4>(buffer, offset);
 }
 
-unsigned int read_ushort(std::vector<unsigned char> const& buffer, int offset)
+uint32_t read_ushort(std::vector<uint8_t> const& buffer, int offset)
 {
   return read_n<2>(buffer, offset);
 }
 
-unsigned int read_uint(unsigned char const* buffer)
+uint32_t read_uint(uint8_t const* buffer)
 {
   return read_n<4>(buffer);
 }
 
-unsigned int read_ushort(unsigned char const* buffer)
+uint32_t read_ushort(uint8_t const* buffer)
 {
   return read_n<2>(buffer);
 }
 
-std::string offset(unsigned int iOffset)
+std::string offset(uint32_t iOffset)
 {
   char buffer[256];
   sprintf(buffer, "0x%.8X", iOffset);
@@ -76,7 +77,7 @@ struct pe_opt_header_s
 {
   unsigned short Magic; // must be 0x010B
 
-  void parse(unsigned char const* buffer)
+  void parse(uint8_t const* buffer)
   {
     Magic = read_ushort(buffer);
     if(Magic != 0x010B)
@@ -91,7 +92,7 @@ struct pe_section_s
   unsigned long VirtualAddress;
   unsigned long SizeOfRawData;
 
-  void parse(unsigned char const* buffer)
+  void parse(uint8_t const* buffer)
   {
     Name = "";
     for(int k=0;k < 8;++k)
@@ -105,14 +106,14 @@ struct pe_section_s
 
 std::list<std::string> g_ExportedNames;
 
-unsigned int rva_to_offset(PE_SECTION_HEADER const& sh, unsigned int iVirtualAddress)
+uint32_t rva_to_offset(PE_SECTION_HEADER const& sh, uint32_t iVirtualAddress)
 {
   assert(iVirtualAddress >= sh.VirtualAddress);
   assert(iVirtualAddress < sh.VirtualAddress + sh.VirtualSize);
   return (iVirtualAddress - sh.VirtualAddress) + sh.PointerToRawData;
 }
 
-std::string read_string(unsigned char const* buffer)
+std::string read_string(uint8_t const* buffer)
 {
   std::string sRet;
   while(*buffer)
@@ -122,7 +123,7 @@ std::string read_string(unsigned char const* buffer)
   return sRet;
 }
 
-void parse_dll(std::vector<unsigned char> const& buffer)
+void parse_dll(std::vector<uint8_t> const& buffer)
 {
   // parse MZ header
   MZ_HEADER mz_header;
@@ -148,7 +149,7 @@ void parse_dll(std::vector<unsigned char> const& buffer)
   //std::cout << "NumberOfRvaAndSizes=" << pe_opt_header.NumberOfRvaAndSizes << std::endl;
 
   std::vector<IMAGE_DATA_DIRECTORY> DataDirectory;
-  unsigned char const* pDataDirectory = &buffer[mz_header.e_lfanew+PE_HEADER::size()+PE_OPT_HEADER::size()];
+  uint8_t const* pDataDirectory = &buffer[mz_header.e_lfanew+PE_HEADER::size()+PE_OPT_HEADER::size()];
   for(int i=0;i < pe_opt_header.NumberOfRvaAndSizes;++i)
   {
     IMAGE_DATA_DIRECTORY entry;
@@ -158,7 +159,7 @@ void parse_dll(std::vector<unsigned char> const& buffer)
   }
 
   std::vector<PE_SECTION_HEADER> SectionHeaders;
-  unsigned char const* pSections = pDataDirectory + pe_opt_header.NumberOfRvaAndSizes * IMAGE_DATA_DIRECTORY::size();
+  uint8_t const* pSections = pDataDirectory + pe_opt_header.NumberOfRvaAndSizes * IMAGE_DATA_DIRECTORY::size();
   for(int i=0;i < pe_header.NumberOfSections;++i)
   {
     PE_SECTION_HEADER sh;
@@ -219,7 +220,7 @@ int main(int argc, char const* argv[])
     }
 
     std::string sBinFilename = argv[1];
-    std::vector<unsigned char> bin_buffer;
+    std::vector<uint8_t> bin_buffer;
     std::ifstream fp_bin(sBinFilename.c_str(), std::ios::binary);
     while(fp_bin.good())
     {
