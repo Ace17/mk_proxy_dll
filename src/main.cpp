@@ -163,108 +163,113 @@ void parse_dll(std::vector<uint8_t> const& buffer)
   }
 }
 
+void safe_main(int argc, char const* argv[])
+{
+  if(argc != 3)
+  {
+    std::cerr << "Usage: " << argv[0] << " <original.dll> <proxy.c>" << std::endl;
+    return;
+  }
+
+  std::string sBinFilename = argv[1];
+  std::vector<uint8_t> bin_buffer;
+  std::ifstream fp_bin(sBinFilename.c_str(), std::ios::binary);
+  while(fp_bin.good())
+  {
+    int c = fp_bin.get();
+    bin_buffer.push_back(c);
+  }
+
+  //std::cout << "Loaded " << bin_buffer.size() << " bytes." << std::endl;
+
+  parse_dll(bin_buffer);
+
+  std::string sSrcFilename = argv[2];
+  std::ofstream fp_out(sSrcFilename.c_str());
+
+  // generate headers
+  {
+    fp_out << "#include <windows.h>" << std::endl;
+    fp_out << "#include <stdio.h>" << std::endl;
+  }
+
+  // generate global variables
+  {
+    fp_out << "HMODULE g_hModule;" << std::endl;
+    for(auto& sName : g_ExportedNames)
+    {
+      fp_out << "static FARPROC g_p" << sName << ";" << std::endl;
+      //      fp_out << sName << std::endl;
+    }
+  }
+
+  // generate InitAddresses function
+  {
+    fp_out << "int InitAddresses()" << std::endl;
+    fp_out << "{" << std::endl;
+    fp_out << "  g_hModule = LoadLibrary(\"" << sBinFilename << "\");" << std::endl;
+    fp_out << "  if(!g_hModule) return 0;" << std::endl;
+    for(auto& sName : g_ExportedNames)
+    {
+      fp_out << "  g_p" << sName << " = GetProcAddress(g_hModule, \"" << sName << "\");" << std::endl; }
+    fp_out << "  return 1;" << std::endl;
+    fp_out << "}" << std::endl;
+    fp_out << std::endl;
+  }
+
+  // generate DllMain
+  {
+    fp_out << "BOOL WINAPI DllMain(HINSTANCE hInst,DWORD reason,LPVOID param)" << std::endl;
+    fp_out << "{" << std::endl;
+    fp_out << "  if (reason == DLL_PROCESS_ATTACH)" << std::endl;
+    fp_out << "  {" << std::endl;
+    fp_out << "    if(!InitAddresses())" << std::endl;
+    fp_out << "      return FALSE;" << std::endl;
+    fp_out << "  }" << std::endl;
+    fp_out << "  if (reason == DLL_PROCESS_DETACH)" << std::endl;
+    fp_out << "  {" << std::endl;
+    fp_out << "    FreeLibrary(g_hModule);" << std::endl;
+    fp_out << "  }" << std::endl;
+    fp_out << "  return 1;" << std::endl;
+    fp_out << "}" << std::endl;
+    fp_out << std::endl;
+  }
+
+  // generate function stubs
+  for(auto& sName : g_ExportedNames)
+  {
+    fp_out << "extern \"C\" __declspec(naked) void proxy_" << sName << "()" << std::endl;
+    fp_out << "{" << std::endl;
+    fp_out << "  fprintf(stderr, \"proxy-dll: entering function " << sName << "\\n\");" << std::endl;
+    fp_out << "  __asm jmp g_p" << sName << ";" << std::endl;
+    fp_out << "}" << std::endl;
+    fp_out << std::endl;
+  }
+
+  // generate module definition (.def) file
+  {
+    std::string sDefFilename = sSrcFilename + ".def";
+    std::ofstream fp_def_out(sDefFilename.c_str());
+    fp_def_out << "EXPORTS" << std::endl;
+    for(auto& sName : g_ExportedNames)
+    {
+      fp_def_out << "  " << sName << "=proxy_" << sName << std::endl;
+    }
+  }
+
+}
+
 int main(int argc, char const* argv[])
 {
   try
   {
-    if(argc != 3)
-    {
-      std::cerr << "Usage: " << argv[0] << " <original.dll> <proxy.c>" << std::endl;
-      return -1;
-    }
-
-    std::string sBinFilename = argv[1];
-    std::vector<uint8_t> bin_buffer;
-    std::ifstream fp_bin(sBinFilename.c_str(), std::ios::binary);
-    while(fp_bin.good())
-    {
-      int c = fp_bin.get();
-      bin_buffer.push_back(c);
-    }
-
-    //std::cout << "Loaded " << bin_buffer.size() << " bytes." << std::endl;
-
-    parse_dll(bin_buffer);
-
-    std::string sSrcFilename = argv[2];
-    std::ofstream fp_out(sSrcFilename.c_str());
-
-    // generate headers
-    {
-      fp_out << "#include <windows.h>" << std::endl;
-      fp_out << "#include <stdio.h>" << std::endl;
-    }
-
-    // generate global variables
-    {
-      fp_out << "HMODULE g_hModule;" << std::endl;
-      for(auto& sName : g_ExportedNames)
-      {
-        fp_out << "static FARPROC g_p" << sName << ";" << std::endl;
-        //      fp_out << sName << std::endl;
-      }
-    }
-
-    // generate InitAddresses function
-    {
-      fp_out << "int InitAddresses()" << std::endl;
-      fp_out << "{" << std::endl;
-      fp_out << "  g_hModule = LoadLibrary(\"" << sBinFilename << "\");" << std::endl;
-      fp_out << "  if(!g_hModule) return 0;" << std::endl;
-      for(auto& sName : g_ExportedNames)
-      {
-        fp_out << "  g_p" << sName << " = GetProcAddress(g_hModule, \"" << sName << "\");" << std::endl;
-      }
-      fp_out << "  return 1;" << std::endl;
-      fp_out << "}" << std::endl;
-      fp_out << std::endl;
-    }
-
-    // generate DllMain
-    {
-      fp_out << "BOOL WINAPI DllMain(HINSTANCE hInst,DWORD reason,LPVOID param)" << std::endl;
-      fp_out << "{" << std::endl;
-      fp_out << "  if (reason == DLL_PROCESS_ATTACH)" << std::endl;
-      fp_out << "  {" << std::endl;
-      fp_out << "    if(!InitAddresses())" << std::endl;
-      fp_out << "      return FALSE;" << std::endl;
-      fp_out << "  }" << std::endl;
-      fp_out << "  if (reason == DLL_PROCESS_DETACH)" << std::endl;
-      fp_out << "  {" << std::endl;
-      fp_out << "    FreeLibrary(g_hModule);" << std::endl;
-      fp_out << "  }" << std::endl;
-      fp_out << "  return 1;" << std::endl;
-      fp_out << "}" << std::endl;
-      fp_out << std::endl;
-    }
-
-    // generate function stubs
-    for(auto& sName : g_ExportedNames)
-    {
-      fp_out << "extern \"C\" __declspec(naked) void proxy_" << sName << "()" << std::endl;
-      fp_out << "{" << std::endl;
-      fp_out << "  fprintf(stderr, \"proxy-dll: entering function " << sName << "\\n\");" << std::endl;
-      fp_out << "  __asm jmp g_p" << sName << ";" << std::endl;
-      fp_out << "}" << std::endl;
-      fp_out << std::endl;
-    }
-
-    // generate module definition (.def) file
-    {
-      std::string sDefFilename = sSrcFilename + ".def";
-      std::ofstream fp_def_out(sDefFilename.c_str());
-      fp_def_out << "EXPORTS" << std::endl;
-      for(auto& sName : g_ExportedNames)
-      {
-        fp_def_out << "  " << sName << "=proxy_" << sName << std::endl;
-      }
-    }
-
+    safe_main(argc, argv);
     return EXIT_SUCCESS;
   }
   catch(std::runtime_error const& e)
   {
-    std::cerr << "Runtime error : " << e.what() << std::endl;
+    std::cerr << "Fatal: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
 }
+
